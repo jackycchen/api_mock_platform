@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: api-mock-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: api_mock_platform
+      MYSQL_USER: apimock
+      MYSQL_PASSWORD: apimock123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - api-mock-network
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: api-mock-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - api-mock-network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: api-mock-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/api_mock_platform?useSSL=false&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+      - SPRING_DATASOURCE_USERNAME=apimock
+      - SPRING_DATASOURCE_PASSWORD=apimock123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - api-mock-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: api-mock-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - api-mock-network
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  api-mock-network:
+    driver: bridge
