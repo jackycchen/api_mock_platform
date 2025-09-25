@@ -73,6 +73,6 @@ public class ProxyConfigController {
             @PathVariable Long configId) {
         User currentUser = SecurityUtils.getCurrentUser();
         proxyConfigService.deleteProxyConfig(projectId, configId, currentUser);
-        return ResponseEntity.ok(ApiResponse.success("代理配置已删除", null));
+        return ResponseEntity.ok(ApiResponse.successMessage("代理配置已删除"));
     }
 }

@@ -5,6 +5,11 @@ export const getProjectApis = (params) => {
   return request.get('/api/v1/apis', { params })
 }
 
+// 获取项目的所有API接口
+export const getApisByProject = (projectId, params = {}) => {
+  return request.get('/api/v1/apis', { params: { projectId, ...params } })
+}
+
 // 获取分组API列表
 export const getGroupApis = (groupId, params) => {
   return request.get(`/api/v1/apis/group/${groupId}`, { params })
@@ -58,4 +63,26 @@ export const copyApi = (id, data) => {
 // 获取API统计信息
 export const getApiStatistics = (params) => {
   return request.get('/api/v1/apis/statistics', { params })
+}
+
+// 获取API版本列表
+export const getApiVersions = (apiId) => {
+  return request.get(`/api/v1/apis/${apiId}/versions`)
+}
+
+// 获取API版本详情
+export const getApiVersionDetail = (apiId, versionNumber) => {
+  return request.get(`/api/v1/apis/${apiId}/versions/${versionNumber}`)
+}
+
+// 恢复到指定API版本
+export const restoreApiVersion = (apiId, versionNumber, data) => {
+  return request.post(`/api/v1/apis/${apiId}/versions/${versionNumber}/restore`, data)
+}
+
+// 比较两个API版本
+export const compareApiVersions = (apiId, version1, version2) => {
+  return request.get(`/api/v1/apis/${apiId}/versions/compare`, {
+    params: { version1, version2 }
+  })
 }

@@ -15,4 +15,10 @@ public interface ProxyConfigRepository extends JpaRepository<ProxyConfig, Long> 
     boolean existsByProjectIdAndPathPatternAndIdNot(Long projectId, String pathPattern, Long excludeId);
 
     Optional<ProxyConfig> findByIdAndProjectId(Long id, Long projectId);
+
+    // 新增方法：获取所有启用的代理配置
+    List<ProxyConfig> findByEnabledTrueOrderByCreatedAtAsc();
+
+    // 新增方法：获取指定项目的启用代理配置
+    List<ProxyConfig> findByProjectIdAndEnabledTrueOrderByCreatedAtAsc(Long projectId);
 }

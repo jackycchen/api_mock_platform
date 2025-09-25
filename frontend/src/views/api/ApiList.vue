@@ -508,6 +508,7 @@
     <api-detail-dialog
       v-model="detailDialogVisible"
       :api-data="currentApiDetail"
+      @refresh="handleDetailRefresh"
     />
 
     <!-- 统计信息对话框 -->
@@ -524,6 +525,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getProjectApis,
+  getApiById,
   createApi,
   updateApi,
   deleteApi,
@@ -808,9 +810,26 @@ const handleSubmit = async () => {
   }
 }
 
-const viewApiDetail = (api) => {
-  currentApiDetail.value = api
-  detailDialogVisible.value = true
+const viewApiDetail = async (api) => {
+  try {
+    const response = await getApiById(api.id)
+    currentApiDetail.value = response.data
+    detailDialogVisible.value = true
+  } catch (error) {
+    console.error('获取API详情失败:', error)
+    ElMessage.error('获取API详情失败: ' + error.message)
+  }
+}
+
+const handleDetailRefresh = async (apiId) => {
+  if (!apiId) return
+  try {
+    const response = await getApiById(apiId)
+    currentApiDetail.value = response.data
+    await loadApis()
+  } catch (error) {
+    console.error('刷新API详情失败:', error)
+  }
 }
 
 const getMethodTagType = (method) => {
@@ -939,7 +958,7 @@ const viewDocumentation = () => {
 }
 
 const showStatistics = () => {
-  statisticsDialogVisible.value = true
+  router.push(`/projects/${projectId.value}/statistics`)
 }
 
 // 监听器

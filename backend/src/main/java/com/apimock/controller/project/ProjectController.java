@@ -5,6 +5,7 @@ import com.apimock.dto.project.CreateProjectRequest;
 import com.apimock.dto.project.ProjectResponse;
 import com.apimock.dto.project.UpdateProjectRequest;
 import com.apimock.entity.auth.User;
+import com.apimock.entity.project.ProjectType;
 import com.apimock.service.project.ProjectService;
 import com.apimock.util.SecurityUtils;
 import jakarta.validation.Valid;
@@ -16,6 +17,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -188,9 +195,17 @@ public class ProjectController {
     @GetMapping("/types")
     public ResponseEntity<ApiResponse<Object>> getProjectTypes() {
         try {
-            // 返回项目类型枚举值和描述
-            return ResponseEntity.ok(ApiResponse.success("获取项目类型成功", null));
-            // TODO: 实现项目类型返回逻辑
+            List<Map<String, String>> types = Arrays.stream(ProjectType.values())
+                    .map(type -> {
+                        Map<String, String> item = new HashMap<>();
+                        item.put("code", type.name());
+                        item.put("name", type.getDisplayName());
+                        item.put("description", type.getDescription());
+                        return item;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(ApiResponse.success("获取项目类型成功", types));
 
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

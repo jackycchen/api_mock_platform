@@ -275,6 +275,78 @@
           </el-tab-pane>
         </el-tabs>
       </el-card>
+
+      <el-card class="detail-section">
+        <template #header>
+          <div class="section-header">
+            <h4>版本历史</h4>
+            <el-button
+              type="primary"
+              text
+              size="small"
+              :loading="versionsLoading"
+              @click="loadVersions"
+            >
+              刷新
+            </el-button>
+          </div>
+        </template>
+        <el-table
+          :data="versionList"
+          v-loading="versionsLoading"
+          size="small"
+          border
+          empty-text="暂无版本记录"
+        >
+          <el-table-column
+            prop="versionNumber"
+            label="版本号"
+            width="100"
+          />
+          <el-table-column
+            prop="changeSummary"
+            label="变更说明"
+            min-width="220"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="createdBy"
+            label="操作人"
+            width="120"
+          />
+          <el-table-column
+            label="创建时间"
+            width="180"
+          >
+            <template #default="scope">
+              {{ formatDate(scope.row.createdAt) }}
+            </template>
+          </el-table-column>
+          <el-table-column
+            label="操作"
+            width="180"
+          >
+            <template #default="scope">
+              <el-button
+                type="primary"
+                text
+                size="small"
+                @click="handleViewVersion(scope.row)"
+              >
+                查看
+              </el-button>
+              <el-button
+                type="warning"
+                text
+                size="small"
+                @click="handleRestoreVersion(scope.row)"
+              >
+                回滚
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
     </div>
 
     <template #footer>
@@ -291,11 +363,190 @@
       </div>
     </template>
   </el-dialog>
+  <el-dialog
+    v-model="versionDetailVisible"
+    title="版本详情"
+    width="720px"
+    destroy-on-close
+  >
+    <div v-loading="versionDetailLoading">
+      <el-descriptions
+        v-if="versionDetail"
+        :column="2"
+        border
+      >
+        <el-descriptions-item label="版本号">
+          {{ versionDetail.versionNumber }}
+        </el-descriptions-item>
+        <el-descriptions-item label="变更说明">
+          {{ versionDetail.changeSummary || '未填写' }}
+        </el-descriptions-item>
+        <el-descriptions-item label="请求方法">
+          <el-tag :type="getMethodTagType(versionDetail.method)" size="small">
+            {{ versionDetail.method }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="接口路径" :span="2">
+          <code class="api-path">{{ versionDetail.path }}</code>
+        </el-descriptions-item>
+        <el-descriptions-item label="接口名称">
+          {{ versionDetail.name }}
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="versionDetail.status === 1 ? 'success' : 'danger'" size="small">
+            {{ versionDetail.status === 1 ? '启用' : '禁用' }}
+          </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="所属分组">
+          <span v-if="versionDetail.groupName">{{ versionDetail.groupName }}</span>
+          <span v-else class="no-group">未分组</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">
+          {{ formatDate(versionDetail.createdAt) }}
+        </el-descriptions-item>
+        <el-descriptions-item label="操作人">
+          {{ versionDetail.createdBy || '系统' }}
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <el-card
+        v-if="versionDetail && parseArray(versionDetail.requestHeaders).length > 0"
+        class="detail-section"
+      >
+        <template #header>
+          <h4>请求头</h4>
+        </template>
+        <el-table
+          :data="parseArray(versionDetail.requestHeaders)"
+          size="small"
+          border
+        >
+          <el-table-column prop="name" label="参数名" width="150" />
+          <el-table-column prop="description" label="描述" />
+          <el-table-column prop="required" label="必填" width="80">
+            <template #default="scope">
+              <el-tag :type="scope.row.required ? 'danger' : 'info'" size="small">
+                {{ scope.row.required ? '是' : '否' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="example" label="示例值" width="150" />
+        </el-table>
+      </el-card>
+
+      <el-card
+        v-if="versionDetail && parseArray(versionDetail.pathParameters).length > 0"
+        class="detail-section"
+      >
+        <template #header>
+          <h4>路径参数</h4>
+        </template>
+        <el-table
+          :data="parseArray(versionDetail.pathParameters)"
+          size="small"
+          border
+        >
+          <el-table-column prop="name" label="参数名" width="150" />
+          <el-table-column prop="type" label="类型" width="120" />
+          <el-table-column prop="description" label="描述" />
+          <el-table-column prop="required" label="必填" width="80">
+            <template #default="scope">
+              <el-tag :type="scope.row.required ? 'danger' : 'info'" size="small">
+                {{ scope.row.required ? '是' : '否' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="example" label="示例值" width="150" />
+        </el-table>
+      </el-card>
+
+      <el-card
+        v-if="versionDetail && parseArray(versionDetail.queryParameters).length > 0"
+        class="detail-section"
+      >
+        <template #header>
+          <h4>查询参数</h4>
+        </template>
+        <el-table
+          :data="parseArray(versionDetail.queryParameters)"
+          size="small"
+          border
+        >
+          <el-table-column prop="name" label="参数名" width="150" />
+          <el-table-column prop="type" label="类型" width="120" />
+          <el-table-column prop="description" label="描述" />
+          <el-table-column prop="required" label="必填" width="80">
+            <template #default="scope">
+              <el-tag :type="scope.row.required ? 'danger' : 'info'" size="small">
+                {{ scope.row.required ? '是' : '否' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="example" label="示例值" width="150" />
+        </el-table>
+      </el-card>
+
+      <el-card
+        v-if="versionDetail?.requestBodySchema"
+        class="detail-section"
+      >
+        <template #header>
+          <h4>请求体 Schema</h4>
+        </template>
+        <div class="schema-viewer">
+          <pre><code>{{ formatJsonSchema(versionDetail.requestBodySchema) }}</code></pre>
+        </div>
+      </el-card>
+
+      <el-card
+        v-if="versionDetail?.responseSchema"
+        class="detail-section"
+      >
+        <template #header>
+          <h4>响应体 Schema</h4>
+        </template>
+        <div class="schema-viewer">
+          <pre><code>{{ formatJsonSchema(versionDetail.responseSchema) }}</code></pre>
+        </div>
+      </el-card>
+
+      <el-card
+        v-if="versionDetail && parseArray(versionDetail.responseExamples).length > 0"
+        class="detail-section"
+      >
+        <template #header>
+          <h4>响应示例</h4>
+        </template>
+        <el-tabs v-model="versionExampleTab" type="border-card">
+          <el-tab-pane
+            v-for="(example, index) in parseArray(versionDetail.responseExamples)"
+            :key="index"
+            :label="example.name || `示例${index + 1}`"
+            :name="index.toString()"
+          >
+            <div class="example-content">
+              <div class="example-meta">
+                <el-tag size="small" type="success">
+                  {{ example.statusCode || 200 }}
+                </el-tag>
+                <span class="example-description">{{ example.description }}</span>
+              </div>
+              <div class="example-body">
+                <pre><code>{{ formatJson(example.body) }}</code></pre>
+              </div>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+      </el-card>
+    </div>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatDate } from '@/utils/format'
+import { getApiVersions, getApiVersionDetail, restoreApiVersion } from '@/api/api'
 
 const props = defineProps({
   modelValue: {
@@ -308,7 +559,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'edit'])
+const emit = defineEmits(['update:modelValue', 'edit', 'refresh'])
 
 const visible = computed({
   get: () => props.modelValue,
@@ -316,45 +567,28 @@ const visible = computed({
 })
 
 const activeExample = ref('0')
+const versionExampleTab = ref('0')
 
-// 解析JSON数据
-const requestHeaders = computed(() => {
-  if (!props.apiData?.requestHeaders) return []
+const versionsLoading = ref(false)
+const versionList = ref([])
+const versionDetailVisible = ref(false)
+const versionDetailLoading = ref(false)
+const versionDetail = ref(null)
+
+const parseArray = (value) => {
+  if (!value) return []
   try {
-    return JSON.parse(props.apiData.requestHeaders)
-  } catch (e) {
+    return JSON.parse(value)
+  } catch (error) {
     return []
   }
-})
+}
 
-const pathParameters = computed(() => {
-  if (!props.apiData?.pathParameters) return []
-  try {
-    return JSON.parse(props.apiData.pathParameters)
-  } catch (e) {
-    return []
-  }
-})
+const requestHeaders = computed(() => parseArray(props.apiData?.requestHeaders))
+const pathParameters = computed(() => parseArray(props.apiData?.pathParameters))
+const queryParameters = computed(() => parseArray(props.apiData?.queryParameters))
+const responseExamples = computed(() => parseArray(props.apiData?.responseExamples))
 
-const queryParameters = computed(() => {
-  if (!props.apiData?.queryParameters) return []
-  try {
-    return JSON.parse(props.apiData.queryParameters)
-  } catch (e) {
-    return []
-  }
-})
-
-const responseExamples = computed(() => {
-  if (!props.apiData?.responseExamples) return []
-  try {
-    return JSON.parse(props.apiData.responseExamples)
-  } catch (e) {
-    return []
-  }
-})
-
-// 方法定义
 const getMethodTagType = (method) => {
   const types = {
     GET: 'success',
@@ -372,7 +606,7 @@ const formatJsonSchema = (schema) => {
   if (!schema) return ''
   try {
     return JSON.stringify(JSON.parse(schema), null, 2)
-  } catch (e) {
+  } catch (error) {
     return schema
   }
 }
@@ -384,8 +618,69 @@ const formatJson = (data) => {
       return JSON.stringify(JSON.parse(data), null, 2)
     }
     return JSON.stringify(data, null, 2)
-  } catch (e) {
+  } catch (error) {
     return data
+  }
+}
+
+const loadVersions = async () => {
+  if (!props.apiData?.id) {
+    versionList.value = []
+    return
+  }
+  versionsLoading.value = true
+  try {
+    const response = await getApiVersions(props.apiData.id)
+    versionList.value = response.data || []
+  } catch (error) {
+    ElMessage.error('获取API版本列表失败: ' + (error.message || '未知错误'))
+  } finally {
+    versionsLoading.value = false
+  }
+}
+
+const handleViewVersion = async (versionRow) => {
+  if (!props.apiData?.id) return
+  versionDetailVisible.value = true
+  versionDetailLoading.value = true
+  versionExampleTab.value = '0'
+  try {
+    const response = await getApiVersionDetail(props.apiData.id, versionRow.versionNumber)
+    versionDetail.value = response.data
+  } catch (error) {
+    versionDetailVisible.value = false
+    ElMessage.error('获取版本详情失败: ' + (error.message || '未知错误'))
+  } finally {
+    versionDetailLoading.value = false
+  }
+}
+
+const handleRestoreVersion = async (versionRow) => {
+  if (!props.apiData?.id) return
+  let summary = ''
+  try {
+    const { value } = await ElMessageBox.prompt(
+      '请输入本次回滚说明（可选）',
+      `回滚到版本 ${versionRow.versionNumber}`,
+      {
+        confirmButtonText: '回滚',
+        cancelButtonText: '取消',
+        inputPlaceholder: '记录这次回滚的原因',
+        inputValue: ''
+      }
+    )
+    summary = value ?? ''
+  } catch (action) {
+    return
+  }
+
+  try {
+    await restoreApiVersion(props.apiData.id, versionRow.versionNumber, summary ? { changeSummary: summary } : {})
+    ElMessage.success('回滚API版本成功')
+    await loadVersions()
+    emit('refresh', props.apiData.id)
+  } catch (error) {
+    ElMessage.error('回滚API版本失败: ' + (error.message || '未知错误'))
   }
 }
 
@@ -398,13 +693,27 @@ const handleEdit = () => {
   handleClose()
 }
 
-// 监听对话框显示状态，重置示例选择
 watch(visible, (newValue) => {
   if (newValue) {
     activeExample.value = '0'
+    versionExampleTab.value = '0'
+    loadVersions()
+  } else {
+    versionList.value = []
+    versionDetailVisible.value = false
   }
 })
+
+watch(
+  () => props.apiData?.id,
+  (newId, oldId) => {
+    if (visible.value && newId && newId !== oldId) {
+      loadVersions()
+    }
+  }
+)
 </script>
+
 
 <style scoped>
 .api-detail {
@@ -425,6 +734,13 @@ watch(visible, (newValue) => {
   color: #303133;
   font-size: 16px;
   font-weight: 600;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .api-path {

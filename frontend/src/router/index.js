@@ -52,6 +52,12 @@ const routes = [
         meta: { title: 'API文档', requiresAuth: true }
       },
       {
+        path: 'projects/:id/statistics',
+        name: 'AccessStatistics',
+        component: () => import('@/views/statistics/AccessStatistics.vue'),
+        meta: { title: '访问统计', requiresAuth: true }
+      },
+      {
         path: 'mock',
         name: 'Mock',
         component: () => import('@/views/mock/MockList.vue'),

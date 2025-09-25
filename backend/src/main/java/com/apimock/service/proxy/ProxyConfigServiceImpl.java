@@ -153,4 +153,16 @@ public class ProxyConfigServiceImpl implements ProxyConfigService {
         config.setPreserveHost(Boolean.TRUE.equals(request.getPreserveHost()));
         config.setEnabled(request.getEnabled() == null || request.getEnabled());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProxyConfig> getAllEnabledConfigs() {
+        return proxyConfigRepository.findByEnabledTrueOrderByCreatedAtAsc();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProxyConfig> getEnabledConfigsByProject(Long projectId) {
+        return proxyConfigRepository.findByProjectIdAndEnabledTrueOrderByCreatedAtAsc(projectId);
+    }
 }

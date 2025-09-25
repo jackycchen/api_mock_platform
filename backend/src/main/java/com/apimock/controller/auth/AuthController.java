@@ -130,18 +130,18 @@ public class AuthController {
      * 获取当前用户信息
      */
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<Object>> getCurrentUser() {
+    public ResponseEntity<ApiResponse<Void>> getCurrentUser() {
         // TODO: 实现获取当前用户信息
-        return ResponseEntity.ok(ApiResponse.success("获取用户信息成功", null));
+        return ResponseEntity.ok(ApiResponse.successMessage("获取用户信息成功"));
     }
 
     /**
      * 刷新Token
      */
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<Object>> refreshToken() {
+    public ResponseEntity<ApiResponse<Void>> refreshToken() {
         // TODO: 实现Token刷新
-        return ResponseEntity.ok(ApiResponse.success("Token刷新成功", null));
+        return ResponseEntity.ok(ApiResponse.successMessage("Token刷新成功"));
     }
 
     /**
